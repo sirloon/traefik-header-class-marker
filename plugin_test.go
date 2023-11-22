@@ -1,14 +1,16 @@
-package traefikheaderclassmarker
+package traefik_header_class_marker_test
 
 import (
 	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+    "github.com/sirloon/traefik-header-class-marker"
 )
 
-func TestDemo(t *testing.T) {
-	cfg := CreateConfig()
+func TestClassMarker(t *testing.T) {
+	cfg := traefik_header_class_marker.CreateConfig()
 	cfg.Headers["X-Host"] = "[[.Host]]"
 	cfg.Headers["X-Method"] = "[[.Method]]"
 	cfg.Headers["X-URL"] = "[[.URL]]"
@@ -18,7 +20,7 @@ func TestDemo(t *testing.T) {
 	ctx := context.Background()
 	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
 
-	handler, err := New(ctx, next, cfg, "traefik-header-class-marker")
+	handler, err := traefik_header_class_marker.New(ctx, next, cfg, "traefik-header-class-marker")
 	if err != nil {
 		t.Fatal(err)
 	}

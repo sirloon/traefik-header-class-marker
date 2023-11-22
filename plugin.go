@@ -1,5 +1,5 @@
-// Package traefikheaderclassmarker create header from other header's value
-package traefikheaderclassmarker
+// Package traefik_header_class_marker create header from other header's value
+package traefik_header_class_marker
 
 import (
 	"bytes"
