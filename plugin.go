@@ -2,7 +2,6 @@
 package traefik_header_class_marker
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -11,55 +10,57 @@ import (
 
 // Config the plugin configuration.
 type Config struct {
-	Headers map[string]string `json:"headers,omitempty"`
+	SourceHeader            string              `json:"sourceHeader"`
+	DestinationHeaderPrefix string              `json:"destinationHeaderPrefix"`
+	Classes                 map[string][]string `json:"classes,omitempty"`
 }
 
 // CreateConfig creates the default plugin configuration.
 func CreateConfig() *Config {
 	return &Config{
-		Headers: make(map[string]string),
+		SourceHeader:            "x-jwt-preferred_username",
+		DestinationHeaderPrefix: "x-throttling-class-",
+		Classes:                 make(map[string][]string),
 	}
 }
 
-// Demo a Demo plugin.
-type Demo struct {
-	next     http.Handler
-	headers  map[string]string
-	name     string
-	template *template.Template
+// ClassMarker a ClassMarker plugin.
+type ClassMarker struct {
+	next                    http.Handler
+	sourceHeader            string
+	destinationHeaderPrefix string
+	classes                 map[string][]string
+	name                    string
+	template                *template.Template
 }
 
-// New created a new Demo plugin.
+// New created a new ClassMarker plugin.
 func New(_ context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
-	if len(config.Headers) == 0 {
-		return nil, fmt.Errorf("headers cannot be empty")
+	if len(config.Classes) == 0 {
+		return nil, fmt.Errorf("classes cannot be empty")
 	}
 
-	return &Demo{
-		headers:  config.Headers,
-		next:     next,
-		name:     name,
-		template: template.New("demo").Delims("[[", "]]"),
+	return &ClassMarker{
+		sourceHeader:            config.SourceHeader,
+		destinationHeaderPrefix: config.DestinationHeaderPrefix,
+		classes:                 config.Classes,
+		next:                    next,
+		name:                    name,
+		template:                template.New("marker").Delims("[[", "]]"),
 	}, nil
 }
 
-func (a *Demo) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	for key, value := range a.headers {
-		tmpl, err := a.template.Parse(value)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
+func (a *ClassMarker) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	for _, value := range req.Header.Values(a.sourceHeader) {
+		for class, subjects := range a.classes {
+            for _, subject := range subjects {
+                if subject == value {
+                    headerName := a.destinationHeaderPrefix + class
+                    req.Header.Set(headerName, value)
+                    break
+                }
+            }
 		}
-
-		writer := &bytes.Buffer{}
-
-		err = tmpl.Execute(writer, req)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		req.Header.Set(key, writer.String())
 	}
 
 	a.next.ServeHTTP(rw, req)
