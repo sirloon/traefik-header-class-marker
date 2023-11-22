@@ -1,10 +1,10 @@
-displayName: Demo Plugin
+displayName: Header Class Marker
 type: middleware
 iconPath: .assets/icon.png
 
-import: github.com/traefik/plugindemo
+import: github.com/sirloon/traefik-header-class-marker
 
-summary: '[Demo] Add Request Header'
+summary: 'Create header based on other header value'
 
 testData:
   Headers:
